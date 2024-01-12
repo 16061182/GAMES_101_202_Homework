@@ -9,7 +9,7 @@ GAMES202Main();
 function GAMES202Main() {
 	// Init canvas and gl
 	const canvas = document.querySelector('#glcanvas');
-	canvas.width = window.screen.width;
+	canvas.width = window.screen.width; // mmc canvas是window的抽象
 	canvas.height = window.screen.height;
 	const gl = canvas.getContext('webgl');
 	if (!gl) {
@@ -18,7 +18,7 @@ function GAMES202Main() {
 	}
 
 	// Add camera
-	const camera = new THREE.PerspectiveCamera(75, gl.canvas.clientWidth / gl.canvas.clientHeight, 1e-2, 1000);
+	const camera = new THREE.PerspectiveCamera(75, gl.canvas.clientWidth / gl.canvas.clientHeight, 1e-2, 1000); // mmc fov, aspect, near, far
 	camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 
 	// Add resize listener
@@ -27,7 +27,7 @@ function GAMES202Main() {
 		camera.updateProjectionMatrix();
 	}
 	setSize(canvas.clientWidth, canvas.clientHeight);
-	window.addEventListener('resize', () => setSize(canvas.clientWidth, canvas.clientHeight));
+	window.addEventListener('resize', () => setSize(canvas.clientWidth, canvas.clientHeight)); // mmc window size改动引发相机更新
 
 	// Add camera control
 	const cameraControls = new THREE.OrbitControls(camera, canvas);

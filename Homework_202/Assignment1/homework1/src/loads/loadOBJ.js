@@ -61,7 +61,7 @@ function loadOBJ(renderer, path, name, objMaterial, transform) {
 										break;
 								}
 							
-								material.then((data) => {
+								material.then((data) => { // mmc material是一个promise，不是真正的material，真正的material是这里的data，也就是buildPhongMaterial的返回值
 									let meshRender = new MeshRender(renderer.gl, mesh, data);
 									renderer.addMeshRender(meshRender);
 								});
