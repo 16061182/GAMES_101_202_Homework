@@ -52,7 +52,7 @@ class DirectionalLight {
 
         //Edit End
 
-        mat4.multiply(lightMVP, projectionMatrix, viewMatrix);
+        mat4.multiply(lightMVP, projectionMatrix, viewMatrix); // mmc lightMVP = projectionMatrix * viewMatrix
         mat4.multiply(lightMVP, lightMVP, modelMatrix);
 
         return lightMVP;
