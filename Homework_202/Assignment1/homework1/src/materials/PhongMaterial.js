@@ -11,7 +11,7 @@ class PhongMaterial extends Material {
             'uKs': { type: '3fv', value: specular },
             'uLightIntensity': { type: '3fv', value: lightIntensity },
             // Shadow
-            'uShadowMap': { type: 'texture', value: light.fbo },
+            'uShadowMap': { type: 'texture', value: light.fbo }, // mmc ShadowMap是material参数，因为在material的shader里要用
             'uLightMVP': { type: 'matrix4fv', value: lightMVP },
         //Edit Start 添加lightIndex参数
         }, [], vertexShader, fragmentShader, null, lightIndex);

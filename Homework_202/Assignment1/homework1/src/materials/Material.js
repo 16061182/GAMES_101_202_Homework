@@ -33,7 +33,7 @@ class Material {
     compile(gl) {
         return new Shader(gl, this.#vsSrc, this.#fsSrc,
             {
-                uniforms: this.#flatten_uniforms,
+                uniforms: this.#flatten_uniforms, // mmc 绑定uniform
                 attribs: this.#flatten_attribs
             });
     }

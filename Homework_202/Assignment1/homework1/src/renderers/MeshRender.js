@@ -184,9 +184,9 @@ class MeshRender {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.material.frameBuffer);
 		if (this.material.frameBuffer != null) {
 			// Shadow map
-			gl.viewport(0.0, 0.0, resolution, resolution);
+			gl.viewport(0.0, 0.0, resolution, resolution); // mmc shadow pass调用至此，渲染至shadow map（resolution * resolution）
 		} else {
-			gl.viewport(0.0, 0.0, window.screen.width, window.screen.height);
+			gl.viewport(0.0, 0.0, window.screen.width, window.screen.height); // mmc camera pass调用至此，渲染至屏幕（this.material.frameBuffer为空）
 		}
 
 		gl.useProgram(this.shader.program.glShaderProgram);

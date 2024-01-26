@@ -14,8 +14,8 @@ class WebGLRenderer {
             meshRender: new MeshRender(this.gl, light.mesh, light.mat)
         });
     }
-    addMeshRender(mesh) { this.meshes.push(mesh); }
-    addShadowMeshRender(mesh) { this.shadowMeshes.push(mesh); }
+    addMeshRender(mesh) { this.meshes.push(mesh); } // mmc loadobj调用，MeshRender类型
+    addShadowMeshRender(mesh) { this.shadowMeshes.push(mesh); } // mmc loadobj调用，MeshRender类型
 
     //Edit Start 添加time, deltaime参数
     render(time, deltaime) {
@@ -69,7 +69,7 @@ class WebGLRenderer {
                     let translation = this.shadowMeshes[i].mesh.transform.translate;
                     let rotation = this.shadowMeshes[i].mesh.transform.rotate;
                     let scale = this.shadowMeshes[i].mesh.transform.scale;
-                    let lightMVP = this.lights[l].entity.CalcLightMVP(translation, rotation, scale);
+                    let lightMVP = this.lights[l].entity.CalcLightMVP(translation, rotation, scale); // mmc lightMVP是正交投影
                     this.shadowMeshes[i].material.uniforms.uLightMVP = { type: 'matrix4fv', value: lightMVP };
                     // Edit End
                     this.shadowMeshes[i].draw(this.camera);
@@ -96,7 +96,7 @@ class WebGLRenderer {
                 let rotation = this.meshes[i].mesh.transform.rotate;
                 let scale = this.meshes[i].mesh.transform.scale;
                 let lightMVP = this.lights[l].entity.CalcLightMVP(translation, rotation, scale);
-                this.meshes[i].material.uniforms.uLightMVP = { type: 'matrix4fv', value: lightMVP };
+                this.meshes[i].material.uniforms.uLightMVP = { type: 'matrix4fv', value: lightMVP }; // mmc lightMVP是正交投影；matrix在内存里是按行排的，uLightMVP[0][1][2][3]是第一行
                 this.meshes[i].material.uniforms.uLightPos = { type: '3fv', value: this.lights[l].entity.lightPos }; // 光源方向计算、光源强度衰减
                 // Edit End
                 this.meshes[i].draw(this.camera);

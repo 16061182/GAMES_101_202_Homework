@@ -51,7 +51,7 @@ function loadOBJ(renderer, path, name, objMaterial, transform) {
 
 							//Edit Start 原本只添加第一个light的材质，改成添加所有light的材质，并添加旋转参数
 							for(let i = 0; i < renderer.lights.length; i++){
-								let light = renderer.lights[i].entity;
+								let light = renderer.lights[i].entity; // mmc 遍历lights，每个light（本质在于其shadow map、light mvp）都创建material
 								switch (objMaterial) {
 									case 'PhongMaterial':
 										//Edit Start 添加旋转参数、光源索引参数
