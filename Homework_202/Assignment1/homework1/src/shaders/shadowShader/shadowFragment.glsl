@@ -19,7 +19,7 @@ vec4 pack (float depth) { // mmc 这个函数的功能是把一个[0, 1)的32位
 void main(){
 
   //gl_FragColor = vec4( 1.0, 0.0, 0.0, gl_FragCoord.z);
-  gl_FragColor = pack(gl_FragCoord.z); // mmc gl_FragCoord是屏幕空间坐标，x：[0, ScreenWidth]，y：[0, ScreenHeight]，z：[0, 1]
+  gl_FragColor = pack(gl_FragCoord.z); // mmc gl_FragCoord是屏幕空间坐标，x：[0, ScreenWidth]，y：[0, ScreenHeight]，z：[0, 1] // 注意shadowmap中存的深度值是0到1的
   // mmc 这里我们使用了z值，能直接表示片元的深度关系，至于此深度值是否线性，取决于投影矩阵，因为平行光使用的是正交矩阵，所以gl_FragCoord.z取得的深度值是线性的。
   // mmc 而gl_FragCoord.w则是裁剪空间坐标中w的倒数。
   // mmc 这个pack函数不支持z值为1.0
