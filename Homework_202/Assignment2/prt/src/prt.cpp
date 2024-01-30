@@ -49,8 +49,8 @@ namespace ProjEnv
         return images;
     }
 
-    const Eigen::Vector3f cubemapFaceDirections[6][3] = {
-        {{0, 0, 1}, {0, -1, 0}, {-1, 0, 0}},  // negx
+    const Eigen::Vector3f cubemapFaceDirections[6][3] = { // mmc 6个平面的局部坐标系的、3个坐标轴方向
+        {{0, 0, 1}, {0, -1, 0}, {-1, 0, 0}},  // negx // mmc negx和posx的x、y轴同向，z轴反向，说明一个是左手系一个是右手系
         {{0, 0, 1}, {0, -1, 0}, {1, 0, 0}},   // posx
         {{1, 0, 0}, {0, 0, -1}, {0, -1, 0}},  // negy
         {{1, 0, 0}, {0, 0, 1}, {0, 1, 0}},    // posy
@@ -105,15 +105,15 @@ namespace ProjEnv
             {
                 for (int x = 0; x < width; x++)
                 {
-                    float u = 2 * ((x + 0.5) / width) - 1;
+                    float u = 2 * ((x + 0.5) / width) - 1; // mmc -1到1
                     float v = 2 * ((y + 0.5) / height) - 1;
-                    Eigen::Vector3f dir = (faceDirX * u + faceDirY * v + faceDirZ).normalized();
+                    Eigen::Vector3f dir = (faceDirX * u + faceDirY * v + faceDirZ).normalized(); // mmc cube中心点到像素中心点的方向
                     cubemapDirs.push_back(dir);
                 }
             }
         }
-        constexpr int SHNum = (SHOrder + 1) * (SHOrder + 1);
-        std::vector<Eigen::Array3f> SHCoeffiecents(SHNum);
+        constexpr int SHNum = (SHOrder + 1) * (SHOrder + 1); // mmc SHOrder是阶数
+        std::vector<Eigen::Array3f> SHCoeffiecents(SHNum); // mmc 根据gpt，Eigen::Array3f相比Eigen::Vector3f更适用于逐元素操作，例如逐元素相加
         for (int i = 0; i < SHNum; i++)
             SHCoeffiecents[i] = Eigen::Array3f(0);
         float sumWeight = 0;
@@ -126,7 +126,7 @@ namespace ProjEnv
                     // TODO: here you need to compute light sh of each face of cubemap of each pixel
                     // TODO: 此处你需要计算每个像素下cubemap某个面的球谐系数
                     Eigen::Vector3f dir = cubemapDirs[i * width * height + y * width + x];
-                    int index = (y * width + x) * channel;
+                    int index = (y * width + x) * channel; // mmc 贴图的像素索引
                     Eigen::Array3f Le(images[i][index + 0], images[i][index + 1],
                                       images[i][index + 2]);
 
@@ -135,15 +135,15 @@ namespace ProjEnv
 
                     for (int l = 0; l <= SHOrder; l++) {
                         for (int m = -l; m <= l; m++) {
-                            auto basic_sh_proj = sh::EvalSH(l, m, Eigen::Vector3d(dir.x(), dir.y(), dir.z()).normalized());
-                            SHCoeffiecents[sh::GetIndex(l, m)] += Le * basic_sh_proj * delta_w;
+                            auto basic_sh_proj = sh::EvalSH(l, m, Eigen::Vector3d(dir.x(), dir.y(), dir.z()).normalized()); // mmc 方向在基函数上的采样，返回一个double值
+                            SHCoeffiecents[sh::GetIndex(l, m)] += Le * basic_sh_proj * delta_w; // mmc 对外面的三层循环（iyx）、也就是cubemap上的所有像素求和（黎曼积分）
                         }
                     }
                     // Edit End
                 }
             }
         }
-        return SHCoeffiecents;
+        return SHCoeffiecents; // mmc cubemap投影成SH系数
     }
 }
 
@@ -265,14 +265,14 @@ public:
         }
         std::cout << "Computed light sh coeffs from: " << cubePath.str() << " to: " << lightPath.str() << std::endl;
         // Projection transport
-        m_TransportSHCoeffs.resize(SHCoeffLength, mesh->getVertexCount());
+        m_TransportSHCoeffs.resize(SHCoeffLength, mesh->getVertexCount()); // mmc 注意：为每个顶点计算light transfer的球面分布，也就是一套sh系数 // 但所有顶点共用一套环境光sh系数
         fout << mesh->getVertexCount() << std::endl;
         for (int i = 0; i < mesh->getVertexCount(); i++)
         {
             const Point3f &v = mesh->getVertexPositions().col(i);
             const Normal3f &n = mesh->getVertexNormals().col(i);
             auto shFunc = [&](double phi, double theta) -> double {
-                Eigen::Array3d d = sh::ToVector(phi, theta);
+                Eigen::Array3d d = sh::ToVector(phi, theta); // mmc theta是与竖轴夹角，phi是平面上的角度
                 const auto wi = Vector3f(d.x(), d.y(), d.z());
                 // Edit Start
                 double H = wi.normalized().dot(n.normalized());
@@ -291,13 +291,13 @@ public:
                         return H;
                     }
                     return 0;
-                }
+                } // mmc 这个函数求的是transfer项，也就是visibility和cosine两项的乘积，H就是cosine，而visibility只有0和1两个值，所以返回值就体现为H还是0二选一
             };
             auto shCoeff = sh::ProjectFunction(SHOrder, shFunc, m_SampleCount);
             for (int j = 0; j < shCoeff->size(); j++)
             {
                 // Edit Start
-                m_TransportSHCoeffs.col(i).coeffRef(j) = (*shCoeff)[j] / M_PI ;
+                m_TransportSHCoeffs.col(i).coeffRef(j) = (*shCoeff)[j] / M_PI ; // mmc .coeffRef(j)看样子是Eigen::MatrixXf列内的索引方式（而非.row(j)）
                 // Edit End
             }
         }
@@ -325,7 +325,7 @@ public:
             uint32_t idx0 = F(0, f), idx1 = F(1, f), idx2 = F(2, f);
             for (int j = 0; j < SHCoeffLength; j++)
             {
-                fout << m_TransportSHCoeffs.col(idx0).coeff(j) << " ";
+                fout << m_TransportSHCoeffs.col(idx0).coeff(j) << " "; // mmc 一个顶点的transfer sh系数占一行
             }
             fout << std::endl;
             for (int j = 0; j < SHCoeffLength; j++)

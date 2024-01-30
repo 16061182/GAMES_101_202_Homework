@@ -623,7 +623,7 @@ std::unique_ptr<std::vector<double>> ProjectFunction(
 
   // This is the approach demonstrated in [1] and is useful for arbitrary
   // functions on the sphere that are represented analytically.
-  const int sample_side = static_cast<int>(floor(sqrt(sample_count)));
+  const int sample_side = static_cast<int>(floor(sqrt(sample_count))); // mmc sample_side是sample_count平方根
   std::unique_ptr<std::vector<double>> coeffs(new std::vector<double>());
   coeffs->assign(GetCoefficientCount(order), 0.0);
 
@@ -640,23 +640,29 @@ std::unique_ptr<std::vector<double>> ProjectFunction(
       double theta = acos(2.0 * alpha - 1.0);
 
       // evaluate the analytic function for the current spherical coords
-      double func_value = func(phi, theta);
+      double func_value = func(phi, theta); // mmc 可见性值
 
       // evaluate the SH basis functions up to band O, scale them by the
       // function's value and accumulate them over all generated samples
       for (int l = 0; l <= order; l++) {
         for (int m = -l; m <= l; m++) {
           double sh = EvalSH(l, m, phi, theta);
-          (*coeffs)[GetIndex(l, m)] += func_value * sh;
+          (*coeffs)[GetIndex(l, m)] += func_value * sh; // mmc 蒙特卡洛积分，先对每个采样结果求和
         }
       }
     }
   }
 
+  /* mmc
+   * 这步其实就是在求transfer项投影到各base function上的系数，这个系数是用与基函数在球面上的积分和的方法来求的，也就是∫ B * f(w) d(w) = coeff
+   * 用的方法是【蒙特卡洛积分】，而前面的环境光照项的sh投影用的是【黎曼积分】
+   * 函数投影到sh == 函数计算各基函数的sh系数 == 函数与各基函数求球面上的积分和
+   */
+
   // scale by the probability of a particular sample, which is
   // 4pi/sample_side^2. 4pi for the surface area of a unit sphere, and
   // 1/sample_side^2 for the number of samples drawn uniformly.
-  double weight = 4.0 * M_PI / (sample_side * sample_side);
+  double weight = 4.0 * M_PI / (sample_side * sample_side); // mmc 明显看出是蒙特卡洛积分
   for (unsigned int i = 0; i < coeffs->size(); i++) {
      (*coeffs)[i] *= weight;
   }
