@@ -5,7 +5,8 @@ class PhongMaterial extends Material {
 //Edit End
         let lightIntensity = light.mat.GetIntensity();
 
-        super({
+        super({ // mmc 传进去的这个字典就是PhongMaterial的shader（由Material.compile生成，包括vs和fs）所需绑定的material uniform（区别于camera uniform）（material uniform绑定给shader是在meshrender.bindMaterialParameters，camera uniform绑定给shader是在meshrender.bindCameraParameters）
+            // mmc 这里列举的可能不全，因为Material.uniforms是public成员，所以外面可以随时给Material加新的uniform（例如在webglrenderer里，调用meshrender.draw之前，手动加uLightMVP和uLightPos）
             // Phong
             'uSampler': { type: 'texture', value: color },
             'uKs': { type: '3fv', value: specular },

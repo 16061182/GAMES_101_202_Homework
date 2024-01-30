@@ -43,7 +43,7 @@ function loadOBJ(renderer, path, name, objMaterial, transform) {
 							}
 
 							let material, shadowMaterial;
-							let Translation = [transform.modelTransX, transform.modelTransY, transform.modelTransZ];
+							let Translation = [transform.modelTransX, transform.modelTransY, transform.modelTransZ]; // mmc engine.js里setTransform创建的transform传进来，再拆成三个向量
 							//Edit Start 添加旋转参数
 							let Rotation = [transform.modelRotateX, transform.modelRotateY, transform.modelRotateZ];
 							//Edit End

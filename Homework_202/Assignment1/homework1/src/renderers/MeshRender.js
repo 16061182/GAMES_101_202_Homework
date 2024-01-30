@@ -44,7 +44,7 @@ class MeshRender {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
 		this.material.setMeshAttribs(extraAttribs);
-		this.shader = this.material.compile(gl);
+		this.shader = this.material.compile(gl); // mmc this.shader是material.compile得到的
 	}
 
 	bindGeometryInfo() {
@@ -130,7 +130,7 @@ class MeshRender {
 		mat4.copy(projectionMatrix, camera.projectionMatrix.elements);
 
 		gl.uniformMatrix4fv(
-			this.shader.program.uniforms.uProjectionMatrix,
+			this.shader.program.uniforms.uProjectionMatrix, // mmc uProjectionMatrix这些“标识符”是material.compile里面声明的（uniforms: this.#flatten_uniforms，就是this.#flatten_uniforms里那些字符串）
 			false,
 			projectionMatrix);
 		gl.uniformMatrix4fv(
@@ -150,13 +150,13 @@ class MeshRender {
 		const gl = this.gl;
 
 		let textureNum = 0;
-		for (let k in this.material.uniforms) {
-
+		for (let k in this.material.uniforms) { // mmc {'uSampler': { type: 'texture', value: color }, 'uKs': { type: '3fv', value: specular }, ......}
+		// mmc 遍历material的uniform，定义了哪些就传给shader哪些
 			if (this.material.uniforms[k].type == 'matrix4fv') {
 				gl.uniformMatrix4fv(
-					this.shader.program.uniforms[k],
+					this.shader.program.uniforms[k], // mmc shader里定义的uniform
 					false,
-					this.material.uniforms[k].value);
+					this.material.uniforms[k].value); // mmc 材质里定义的uniform的值
 			} else if (this.material.uniforms[k].type == '3fv') {
 				gl.uniform3fv(
 					this.shader.program.uniforms[k],

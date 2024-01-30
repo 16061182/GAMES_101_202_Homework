@@ -37,13 +37,18 @@ class WebGLRenderer {
                 this.meshes[i].mesh.transform.rotate[1] = this.meshes[i].mesh.transform.rotate[1] + degrees2Radians(10) * deltaime;
             }
         }
+        /* mmc
+        这里另外补充一个小说明，WebGLRenderer里包含了meshes和shadowMeshes两个数组字段，我们需要对他们都进行渲染，而我们这里只修改了meshes的旋转信息，
+        是因为meshes和shadowMeshes并不是Mesh本身，而是两组MeshRender，这里命名不是很准确，MeshRender里才包含了真正的Mesh实例，
+        而这两组MeshRender其实是指向同一组Mesh，所以我们只需要对其中一组进行修改即可。
+        */
         //Edit End
 
         for (let l = 0; l < this.lights.length; l++) {
 
             //Edit Start 切换光源时，对当前光源的shadowmap的framebuffer做一些清理操作
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.lights[l].entity.fbo); // 绑定到当前光源的framebuffer
-            gl.clearColor(1.0, 1.0, 1.0, 1.0); // shadowmap默认白色（无遮挡），解决地面边缘产生阴影的问题（因为地面外采样不到，默认值为0会认为是被遮挡）
+            gl.clearColor(1.0, 1.0, 1.0, 1.0); // shadowmap默认白色（无遮挡），解决地面边缘产生阴影的问题（因为地面外采样不到，默认值为0会认为是被遮挡） // mmc 采样shadow map采样不到就填成了默认值0？
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // 清除shadowmap上一帧的颜色、深度缓存，否则会一直叠加每一帧的结果
             //Edit End
 
@@ -70,7 +75,7 @@ class WebGLRenderer {
                     let rotation = this.shadowMeshes[i].mesh.transform.rotate;
                     let scale = this.shadowMeshes[i].mesh.transform.scale;
                     let lightMVP = this.lights[l].entity.CalcLightMVP(translation, rotation, scale); // mmc lightMVP是正交投影
-                    this.shadowMeshes[i].material.uniforms.uLightMVP = { type: 'matrix4fv', value: lightMVP };
+                    this.shadowMeshes[i].material.uniforms.uLightMVP = { type: 'matrix4fv', value: lightMVP }; // mmc 每帧更新lightmvp，以支持模型旋转，下同
                     // Edit End
                     this.shadowMeshes[i].draw(this.camera);
                 }
