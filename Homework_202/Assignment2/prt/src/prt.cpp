@@ -100,7 +100,7 @@ namespace ProjEnv
         {
             Eigen::Vector3f faceDirX = cubemapFaceDirections[i][0];
             Eigen::Vector3f faceDirY = cubemapFaceDirections[i][1];
-            Eigen::Vector3f faceDirZ = cubemapFaceDirections[i][2];
+            Eigen::Vector3f faceDirZ = cubemapFaceDirections[i][2]; // mmc 朝向“外”的方向
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
