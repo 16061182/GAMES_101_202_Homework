@@ -51,7 +51,7 @@ class WebGLRenderer {
 
                     let cameraModelMatrix = mat4.create();
                     // Edit Start
-                    mat4.fromRotation(cameraModelMatrix, timer * 10, [0, 1, 0]);
+                    // mat4.fromRotation(cameraModelMatrix, timer * 10, [0, 1, 0]); // mmc 【bonus】旋转时打开
                     // Edit End
 
                     if (k == 'uMoveWithCamera') { // The rotation of the skybox
@@ -62,11 +62,11 @@ class WebGLRenderer {
                     }
 
                     // Bonus - Fast Spherical Harmonic Rotation
-                    let precomputeL_RGBMat3 = getRotationPrecomputeL(precomputeL[guiParams.envmapId], cameraModelMatrix);
+                    // let precomputeL_RGBMat3 = getRotationPrecomputeL(precomputeL[guiParams.envmapId], cameraModelMatrix);  // mmc 【bonus】旋转时打开
                     
                     // Edit Start
-                    // let Mat3Value = getMat3ValueFromRGB(precomputeL[guiParams.envmapId])
-                    let Mat3Value = getMat3ValueFromRGB(precomputeL_RGBMat3);
+                    let Mat3Value = getMat3ValueFromRGB(precomputeL[guiParams.envmapId])  // mmc 【bonus】旋转时注释 // guiParams.envmapId是环境贴图id，就是那四个，cornell box之类的
+                    // let Mat3Value = getMat3ValueFromRGB(precomputeL_RGBMat3);  // mmc 【bonus】旋转时打开
                     for(let j = 0; j < 3; j++){
                         if (k == 'uPrecomputeL['+j+']') {
                             gl.uniformMatrix3fv(

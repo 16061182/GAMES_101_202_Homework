@@ -257,7 +257,7 @@ public:
         std::vector<std::unique_ptr<float[]>> images =
             ProjEnv::LoadCubemapImages(cubePath.str(), width, height, channel);
         auto envCoeffs = ProjEnv::PrecomputeCubemapSH<SHOrder>(images, width, height, channel);
-        m_LightCoeffs.resize(3, SHCoeffLength);
+        m_LightCoeffs.resize(3, SHCoeffLength); // mmc m_LightCoeffs全局，三通道；m_TransportSHCoeffs逐顶点，单通道
         for (int i = 0; i < envCoeffs.size(); i++)
         {
             lightFout << (envCoeffs)[i].x() << " " << (envCoeffs)[i].y() << " " << (envCoeffs)[i].z() << std::endl;
