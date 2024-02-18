@@ -50,7 +50,7 @@ float InitRand(vec2 uv) {
 
 vec3 SampleHemisphereUniform(inout float s, out float pdf) {
   vec2 uv = Rand2(s);
-  float z = uv.x;
+  float z = uv.x; // mmc z的含义还是cosTheta，乍一看与下面的函数相同，但实际上这里的cosTheta是(0, 1)上的随机采样，下面的函数的sinTheta^2是(0, 1)上的随机采样，因此亦有不同
   float phi = uv.y * TWO_PI;
   float sinTheta = sqrt(1.0 - z*z);
   vec3 dir = vec3(sinTheta * cos(phi), sinTheta * sin(phi), z);
@@ -60,13 +60,58 @@ vec3 SampleHemisphereUniform(inout float s, out float pdf) {
 
 vec3 SampleHemisphereCos(inout float s, out float pdf) {
   vec2 uv = Rand2(s);
-  float z = sqrt(1.0 - uv.x);
-  float phi = uv.y * TWO_PI;
+  float z = sqrt(1.0 - uv.x); // mmc z为cosTheta，z为0到1，则Theta可理解为一个0到pi/2的随机角度
+  float phi = uv.y * TWO_PI; // mmc phi是一个0到2pi之间的随机角度
   float sinTheta = sqrt(uv.x);
-  vec3 dir = vec3(sinTheta * cos(phi), sinTheta * sin(phi), z);
+  vec3 dir = vec3(sinTheta * cos(phi), sinTheta * sin(phi), z); // mmc 回想上半球积分立体角时候的Theta和phi，Theta就是单位立体角与竖轴的夹角（0到pi/2），phi就是平面上那个角（0到2pi）。
+  // mmc 这个函数本质上是对立体角的采样，这样来理解这个pdf，不要简单理解为采样“方向”
   pdf = z * INV_PI;
   return dir;
 }
+
+/*
+# include <iostream>
+# include <vector>
+# include <cmath>
+using namespace std;
+
+# define TWO_PI 6.283185307179586476925286766559
+# define INV_TWO_PI 0.15915494309189533576888376337251
+# define INV_PI 0.31830988618379067153776752674503
+
+vector<float> SampleHemisphereUniform(vector<float> uv, float& pdf) {
+  float z = uv[0];
+  float phi = uv[1] * TWO_PI;
+  float sinTheta = sqrt(1.0 - z*z);
+  vector<float> dir = { sinTheta * cos(phi), sinTheta * sin(phi), z };
+  pdf = INV_TWO_PI;
+  return dir;
+}
+
+vector<float> SampleHemisphereCos(vector<float> uv, float& pdf) {
+  float z = sqrt(1.0 - uv[0]);
+  float phi = uv[1] * TWO_PI;
+  float sinTheta = sqrt(uv[0]);
+  vector<float> dir = { sinTheta * cos(phi), sinTheta * sin(phi), z };
+  pdf = z * INV_PI;
+  return dir;
+}
+
+int main() {
+	vector<float> uv = {0.44f, 0.66f};
+	float pdf1, pdf2;
+	vector<float> dir1 = SampleHemisphereUniform(uv, pdf1);
+	vector<float> dir2 = SampleHemisphereCos(uv, pdf2);
+
+	cout << dir1[0] << " " << dir1[1] << " " << dir1[2] << endl;
+	cout << pdf1 << endl;
+
+	cout << dir2[0] << " " << dir2[1] << " " << dir2[2] << endl;
+	cout << pdf2 << endl;
+
+	return 0;
+}
+*/
 
 void LocalBasis(vec3 n, out vec3 b1, out vec3 b2) {
   float sign_ = sign(n.z);
@@ -141,7 +186,7 @@ vec3 EvalDiffuse(vec3 wi, vec3 wo, vec2 uv) {
   vec3 albedo  = GetGBufferDiffuse(uv);
   vec3 normal = GetGBufferNormalWorld(uv);
   float cos = max(0., dot(normal, wi));
-  return albedo * cos * INV_PI;
+  return albedo * cos * INV_PI; // mmc 此处的bsdf项包括了cosθ
 }
 
 /*
@@ -156,11 +201,15 @@ vec3 EvalDirectionalLight(vec2 uv) {
 
 bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
   float step = 0.05;
+  /* mmc
+  * readme：步长取多少需要根据场景实际情况来决定，步长取大了，效果会变差，因为求出来的交点会在物体后面，步长越大误差越大，反射出来的画面会有“断层”的瑕疵，
+  * 而步长取短了会影响性能，这里步长我们固定取0.05，能得到比较好的效果。
+  */
   const int totalStepTimes = 150; 
   int curStepTimes = 0;
 
   vec3 stepDir = normalize(dir) * step;
-  vec3 curPos = ori;
+  vec3 curPos = ori; // mmc 感觉这里`vec3 curPos = ori + stepDir;`更准确，要不然totalStepTimes == 1时实际步进次数为0
   for(int curStepTimes = 0; curStepTimes < totalStepTimes; curStepTimes++)
   {
     vec2 screenUV = GetScreenCoordinate(curPos);
@@ -168,7 +217,7 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
     float gBufferDepth = GetGBufferDepth(screenUV);
 
     if(rayDepth - gBufferDepth > 0.0001){
-      hitPos = curPos;
+      hitPos = curPos; // mmc “交点”会在物体后面
       return true;
     }
 
@@ -391,7 +440,7 @@ bool RayMarch_Hiz(vec3 ori, vec3 dir, out vec3 hitPos) {
 #define SAMPLE_NUM 1
 
 void main() {
-  float s = InitRand(gl_FragCoord.xy);
+  float s = InitRand(gl_FragCoord.xy); // mmc readme：InitRand(vec2 uv)可以理解为取得一个随机种子，用gl_FragCoord.xy可以确保每个fragment都取得不同的随机种子
 
   vec3 L = vec3(0.0);
   // 无光照
@@ -404,7 +453,7 @@ void main() {
   vec3 wo = normalize(uCameraPos - worldPos);
   
   // 直接光照
-  L = EvalDiffuse(wi, wo, screenUV) * EvalDirectionalLight(screenUV);
+  L = EvalDiffuse(wi, wo, screenUV) * EvalDirectionalLight(screenUV); // mmc 没显式计算cosθ，乘在bsdf项里了
 
   // Screen Space Ray Tracing 的反射测试
   // L = (GetGBufferDiffuse(screenUV) + EvalReflect(wi, wo, screenUV))/2.;
@@ -465,6 +514,6 @@ void main() {
 
   L = L + L_ind;
   
-  vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2)); // mmc 作业pdf说 GetGBufferDiffuse(uv) 返回的值是在线性空间的，转换成伽马空间（提升暗部）应该开2.2次方；线性空间数值用于计算，伽马空间数值用于存储、显示
   FragColor = vec4(vec3(color.rgb), 1.0);
 }
