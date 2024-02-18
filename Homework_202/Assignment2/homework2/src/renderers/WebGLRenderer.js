@@ -51,7 +51,7 @@ class WebGLRenderer {
 
                     let cameraModelMatrix = mat4.create();
                     // Edit Start
-                    // mat4.fromRotation(cameraModelMatrix, timer * 10, [0, 1, 0]); // mmc 【bonus】旋转时打开
+                    mat4.fromRotation(cameraModelMatrix, timer * 10, [0, 1, 0]); // mmc 【bonus】旋转时打开
                     // Edit End
 
                     if (k == 'uMoveWithCamera') { // The rotation of the skybox
@@ -62,15 +62,21 @@ class WebGLRenderer {
                     }
 
                     // Bonus - Fast Spherical Harmonic Rotation
-                    // let precomputeL_RGBMat3 = getRotationPrecomputeL(precomputeL[guiParams.envmapId], cameraModelMatrix);  // mmc 【bonus】旋转时打开
+                    let precomputeL_RGBMat3 = getRotationPrecomputeL(precomputeL[guiParams.envmapId], cameraModelMatrix);  // mmc 【bonus】旋转时打开
                     
                     // Edit Start
-                    let Mat3Value = getMat3ValueFromRGB(precomputeL[guiParams.envmapId])  // mmc 【bonus】旋转时注释 // guiParams.envmapId是环境贴图id，就是那四个，cornell box之类的
-                    // let Mat3Value = getMat3ValueFromRGB(precomputeL_RGBMat3);  // mmc 【bonus】旋转时打开
+                    // let Mat3Value = getMat3ValueFromRGB(precomputeL[guiParams.envmapId])  // mmc 【bonus】旋转时注释 // guiParams.envmapId是环境贴图id，就是那四个，cornell box之类的
+                    /* mmc
+                    * precomputeL[guiParams.envmapId]第一维是9个sh系数，第二维是rgb3个通道
+                    * getMat3ValueFromRGB手动给这个矩阵做了一个转置
+                    * Mat3Value第一维是3通道，第二维是9个sh系数
+                    */
+
+                    let Mat3Value = getMat3ValueFromRGB(precomputeL_RGBMat3);  // mmc 【bonus】旋转时打开
                     for(let j = 0; j < 3; j++){
-                        if (k == 'uPrecomputeL['+j+']') {
+                        if (k == 'uPrecomputeL['+j+']') { // mmc uPrecomputeL在shader里是个数组
                             gl.uniformMatrix3fv(
-                                this.meshes[i].shader.program.uniforms[k],
+                                this.meshes[i].shader.program.uniforms[k], // mmc 类型是WebGLUniformLocation，uniform名到uniform location的映射（即this.meshes[i].shader.program.uniforms）是在shader的构造函数里用addShaderLocations函数创建的
                                 false,
                                 Mat3Value[j]);
                         }

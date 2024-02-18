@@ -654,7 +654,7 @@ std::unique_ptr<std::vector<double>> ProjectFunction(
   }
 
   /* mmc
-   * 这步其实就是在求transfer项投影到各base function上的系数，这个系数是用与基函数在球面上的积分和的方法来求的，也就是∫ B * f(w) d(w) = coeff
+   * 这步其实就是在求transfer项投影到各base function上的系数，这个系数是用与基函数在球面上的积分和的方法来求的，也就是∫ B * f(w) dw = coeff
    * 用的方法是【蒙特卡洛积分】，而前面的环境光照项的sh投影用的是【黎曼积分】
    * 函数投影到sh == 函数计算各基函数的sh系数 == 函数与各基函数求球面上的积分和
    */

@@ -5,7 +5,7 @@ class Material {
     #fsSrc;
     // Uniforms is a map, attribs is a Array
     constructor(uniforms, attribs, vsSrc, fsSrc, frameBuffer) {
-        this.uniforms = uniforms;
+        this.uniforms = uniforms; // mmc 这玩意用在MeshRenderer.js的bindMaterialParameters()函数里
         this.attribs = attribs;
         this.#vsSrc = vsSrc;
         this.#fsSrc = fsSrc;

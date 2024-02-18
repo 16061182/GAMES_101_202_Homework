@@ -18,6 +18,6 @@ vec3 toneMapping(vec3 color){
 }
 
 void main(){
-  vec3 color = toneMapping(vColor); 
+  vec3 color = toneMapping(vColor); // mmc 看readme
   gl_FragColor = vec4(color, 1.0);
 }

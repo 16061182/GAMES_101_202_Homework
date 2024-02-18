@@ -129,6 +129,11 @@ namespace ProjEnv
                     int index = (y * width + x) * channel; // mmc 贴图的像素索引
                     Eigen::Array3f Le(images[i][index + 0], images[i][index + 1],
                                       images[i][index + 2]);
+                    /* mmc 可以看到Le（入射光）就是读的贴图里的颜色，换句话说**环境贴图里存的是radiance，方向为从cubemap像素中心到cube中心**
+                    * 我们知道对于mesh上的所有顶点，环境光sh系数用的都是相同的一套（不像light transport那样各顶点不同），也就是说认为**对于mesh上各点来说**，环境光照相同
+                    * 更具体一点，假设mesh中心点为o，mesh上有两点a和b，cubemap某像素中心点为p，我们认为从p到o、从p到a、从p到b的radiance都相同
+                    * 这个假设是合理的，因为环境光照本来就被认为是来自无限远处，可以理解成这种尺度下o、a、b是同一点，也可以理解成以o为中心的一个无限大cube、以a为中心的一个无限大cube、以b为中心的一个无限大cube是同一个cube
+                    */
 
                     // Edit Start
                     auto delta_w = CalcArea(x, y, width, height);
@@ -193,7 +198,7 @@ public:
         if (bounces > m_Bounce)
             return coeffs;
 
-        const int sample_side = static_cast<int>(floor(sqrt(m_SampleCount)));
+        const int sample_side = static_cast<int>(floor(sqrt(m_SampleCount))); // mmc 以下参考自spherical_harmonics.cc，ProjectFunction
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<> rng(0.0, 1.0);
@@ -208,18 +213,18 @@ public:
                 const auto wi = Vector3f(d.x(), d.y(), d.z());
                 double H = wi.normalized().dot(normal);
                 Intersection its;
-                if (H > 0.0 && scene->rayIntersect(Ray3f(pos, wi.normalized()), its))
+                if (H > 0.0 && scene->rayIntersect(Ray3f(pos, wi.normalized()), its)) // mmc 在上半球面击中
                 {
-                    MatrixXf normals = its.mesh->getVertexNormals();
-                    Point3f idx = its.tri_index;
-                    Point3f hitPos = its.p;
+                    MatrixXf normals = its.mesh->getVertexNormals(); // mmc 每列是一个顶点的法线
+                    Point3f idx = its.tri_index; // mmc 就是一个float3，记录三角形三个顶点的顶点序号，应该就是击中的三角形
+                    Point3f hitPos = its.p; // mmc 击中点空间位置
                     Vector3f bary = its.bary;
 
                     Normal3f hitNormal =
-                        Normal3f(normals.col(idx.x()).normalized() * bary.x() +
+                        Normal3f(normals.col(idx.x()).normalized() * bary.x() + // mmc 看上去bary是顶点的（重心）权重
                             normals.col(idx.y()).normalized() * bary.y() +
                             normals.col(idx.z()).normalized() * bary.z())
-                        .normalized();
+                        .normalized(); // mmc 击中点法线的重心插值
 
                     auto nextBouncesCoeffs = computeInterreflectionSH(directTSHCoeffs, hitPos, hitNormal, scene, bounces + 1);
 
@@ -229,14 +234,15 @@ public:
                             directTSHCoeffs->col(idx.y()).coeffRef(i) * bary.y() +
                             directTSHCoeffs->col(idx.z()).coeffRef(i) * bary.z());
 
-                        (*coeffs)[i] += (interpolateSH + (*nextBouncesCoeffs)[i]) * H;
+                        (*coeffs)[i] += (interpolateSH + (*nextBouncesCoeffs)[i]) * H; // mmc 推一下，是对的，注意computeInterreflectionSH（本函数）返回的结果是当前bounce及以后所有bounce的结果之和
                     }
                 }
+                // mmc else 没击中的认为(*coeffs)[i] += 0;
             }
         }
 
         for (unsigned int i = 0; i < coeffs->size(); i++) {
-            (*coeffs)[i] /= sample_side * sample_side;
+            (*coeffs)[i] /= sample_side * sample_side; // mmc 路径追踪，多条路径求平均
         }
         
         return coeffs;
@@ -281,7 +287,7 @@ public:
                 {
                     // TODO: here you need to calculate unshadowed transport term of a given direction
                     // TODO: 此处你需要计算给定方向下的unshadowed传输项球谐函数值
-                    return H > 0.0 ? H : 0;
+                    return H > 0.0 ? H : 0; // mmc 只要是上半球面，都认为可见
                 }
                 else
                 {
@@ -297,7 +303,7 @@ public:
             for (int j = 0; j < shCoeff->size(); j++)
             {
                 // Edit Start
-                m_TransportSHCoeffs.col(i).coeffRef(j) = (*shCoeff)[j] / M_PI ; // mmc .coeffRef(j)看样子是Eigen::MatrixXf列内的索引方式（而非.row(j)）
+                m_TransportSHCoeffs.col(i).coeffRef(j) = (*shCoeff)[j] / M_PI ; // mmc .coeffRef(j)看样子是Eigen::MatrixXf列内的索引方式（而非.row(j)） // 没明白这里为什么要除以pi，但是根据readme好像不除画面会过亮
                 // Edit End
             }
         }
@@ -312,7 +318,7 @@ public:
                 auto indirectCoeffs = computeInterreflectionSH(&m_TransportSHCoeffs, v, n, scene, 1);
                 for (int j = 0; j < SHCoeffLength; j++)
                 {
-                    m_TransportSHCoeffs.col(i).coeffRef(j) += (*indirectCoeffs)[j];
+                    m_TransportSHCoeffs.col(i).coeffRef(j) += (*indirectCoeffs)[j]; // mmc 直接环境光 + 间接环境光
                 }
                 std::cout << "computing interreflection light sh coeffs, current vertex idx: " << i << " total vertex idx: " << mesh->getVertexCount() << std::endl;
             }
