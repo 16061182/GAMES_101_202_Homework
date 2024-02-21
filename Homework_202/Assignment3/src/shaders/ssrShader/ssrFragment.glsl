@@ -209,7 +209,8 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
   int curStepTimes = 0;
 
   vec3 stepDir = normalize(dir) * step;
-  vec3 curPos = ori; // mmc 感觉这里`vec3 curPos = ori + stepDir;`更准确，要不然totalStepTimes == 1时实际步进次数为0
+  // vec3 curPos = ori; // mmc 感觉这里`vec3 curPos = ori + stepDir;`更准确，要不然totalStepTimes == 1时实际步进次数为0
+  vec3 curPos = ori + stepDir;
   for(int curStepTimes = 0; curStepTimes < totalStepTimes; curStepTimes++)
   {
     vec2 screenUV = GetScreenCoordinate(curPos);
@@ -437,7 +438,7 @@ bool RayMarch_Hiz(vec3 ori, vec3 dir, out vec3 hitPos) {
     return false;
 }
 
-#define SAMPLE_NUM 1
+#define SAMPLE_NUM 10
 
 void main() {
   float s = InitRand(gl_FragCoord.xy); // mmc readme：InitRand(vec2 uv)可以理解为取得一个随机种子，用gl_FragCoord.xy可以确保每个fragment都取得不同的随机种子
@@ -451,64 +452,92 @@ void main() {
   vec3 worldPos = vPosWorld.xyz;
   vec3 wi = normalize(uLightDir);
   vec3 wo = normalize(uCameraPos - worldPos);
+
+  bool basicReflectionTest = false;
   
   // 直接光照
-  L = EvalDiffuse(wi, wo, screenUV) * EvalDirectionalLight(screenUV); // mmc 没显式计算cosθ，乘在bsdf项里了
+  L = EvalDiffuse(wi, wo, screenUV) * EvalDirectionalLight(screenUV); // mmc 没显式计算cosθ，乘在bsdf项（EvalDiffuse）里了
 
   // Screen Space Ray Tracing 的反射测试
-  // L = (GetGBufferDiffuse(screenUV) + EvalReflect(wi, wo, screenUV))/2.;
+  // mmc 若要开启测试请注释掉直接光照那行并设置basicReflectionTest = true
+//  L = (GetGBufferDiffuse(screenUV) + EvalReflect(wi, wo, screenUV))/2.;
+//  L = EvalReflect(wi, wo, screenUV);
+
 
   vec3 L_ind = vec3(0.0);
+if (!basicReflectionTest) {
+
+  // mmc 基础部分间接光照，ssr，若对现象有疑问请看note
   for(int i = 0; i < SAMPLE_NUM; i++){
-    float pdf;
-    vec3 localDir = SampleHemisphereCos(s, pdf);
-    vec3 normal = GetGBufferNormalWorld(screenUV);
-    vec3 b1, b2;
-    LocalBasis(normal, b1, b2);
-    vec3 dir = normalize(mat3(b1, b2, normal) * localDir); // ssgi
-    // vec3 dir = normalize(reflect(-wo, normal)); // ssr
+      float pdf;
+      vec3 localDir = SampleHemisphereCos(s, pdf);
+      vec3 normal = GetGBufferNormalWorld(screenUV);
+      vec3 b1, b2;
+      LocalBasis(normal, b1, b2);
+      vec3 dir = normalize(mat3(b1, b2, normal) * localDir);
 
-    // vec3 endPosInWorld = worldPos + dir * 1000.;
-    // vec3 start = GetScreenCoordinate3(worldPos);
-    // vec3 end = GetScreenCoordinate3(endPosInWorld);
-    // vec3 rayDir = normalize(end - start);
-
-    // float maxTraceX = rayDir.x >= 0. ? (1. - start.x) / rayDir.x : -start.x / rayDir.x;
-    // float maxTraceY = rayDir.y >= 0. ? (1. - start.y) / rayDir.y : -start.y / rayDir.y;
-    // float maxTraceZ = rayDir.z >= 0. ? (1. - start.z) / rayDir.z : -start.z / rayDir.z;
-    // float maxTraceDistance = min(maxTraceX, min(maxTraceY, maxTraceZ));
-
-    vec3 position_1;
-    // if(RayMarch(worldPos, dir, position_1)){
-    //   vec2 hitScreenUV = GetScreenCoordinate(position_1);
-      
-    //   // ssgi
-    //   L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, dir, hitScreenUV) * EvalDirectionalLight(hitScreenUV);
-
-    //   // ssr
-    //   // L_ind += GetGBufferDiffuse(hitScreenUV);
-    // }
-
-    if(RayMarch_Hiz(worldPos, dir, position_1)){
-      vec2 hitScreenUV = GetScreenCoordinate(position_1);
-      
-      // ssgi
-      L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, dir, hitScreenUV) * EvalDirectionalLight(hitScreenUV);
-
-      // ssr
-      // L_ind += GetGBufferDiffuse(hitScreenUV);
-    }
-
-    // if(RayMarch_Hiz_In_Texture_Space(start, rayDir, maxTraceDistance, position_1)){
-    //   // vec2 hitScreenUV = GetScreenCoordinate(position_1);
-
-    //   // ssgi
-    //   L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, dir, position_1.xy) * EvalDirectionalLight(position_1.xy);
-
-    //   // ssr
-    //   // L_ind += GetGBufferDiffuse(position_1.xy);
-    // }
+      vec3 position_1;
+      if(RayMarch(worldPos, dir, position_1)){
+          vec2 hitScreenUV = GetScreenCoordinate(position_1);
+          L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, -dir, hitScreenUV) * EvalDirectionalLight(hitScreenUV); // mmc 至于为什么两个EvalDiffuse可以相乘，作业3的pdf上给的算法就是这么写的
+//          L_ind += 1.0 / pdf * EvalDiffuse(wi, -dir, hitScreenUV) * EvalDirectionalLight(hitScreenUV);
+      }
   }
+
+  // mmc 提高部分
+//  for(int i = 0; i < SAMPLE_NUM; i++){
+//    float pdf;
+//    vec3 localDir = SampleHemisphereCos(s, pdf);
+//    vec3 normal = GetGBufferNormalWorld(screenUV);
+//    vec3 b1, b2;
+//    LocalBasis(normal, b1, b2);
+//    vec3 dir = normalize(mat3(b1, b2, normal) * localDir); // ssgi
+//    // vec3 dir = normalize(reflect(-wo, normal)); // ssr
+//
+//    // vec3 endPosInWorld = worldPos + dir * 1000.;
+//    // vec3 start = GetScreenCoordinate3(worldPos);
+//    // vec3 end = GetScreenCoordinate3(endPosInWorld);
+//    // vec3 rayDir = normalize(end - start);
+//
+//    // float maxTraceX = rayDir.x >= 0. ? (1. - start.x) / rayDir.x : -start.x / rayDir.x;
+//    // float maxTraceY = rayDir.y >= 0. ? (1. - start.y) / rayDir.y : -start.y / rayDir.y;
+//    // float maxTraceZ = rayDir.z >= 0. ? (1. - start.z) / rayDir.z : -start.z / rayDir.z;
+//    // float maxTraceDistance = min(maxTraceX, min(maxTraceY, maxTraceZ));
+//
+//    vec3 position_1;
+//    // if(RayMarch(worldPos, dir, position_1)){
+//    //   vec2 hitScreenUV = GetScreenCoordinate(position_1);
+//
+//    //   // ssgi
+//    //   L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, dir, hitScreenUV) * EvalDirectionalLight(hitScreenUV);
+//
+//    //   // ssr
+//    //   // L_ind += GetGBufferDiffuse(hitScreenUV);
+//    // }
+//
+//    if(RayMarch_Hiz(worldPos, dir, position_1)){
+//      vec2 hitScreenUV = GetScreenCoordinate(position_1);
+//
+//      // ssgi
+//      L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, dir, hitScreenUV) * EvalDirectionalLight(hitScreenUV);
+//
+//      // ssr
+//      // L_ind += GetGBufferDiffuse(hitScreenUV);
+//    }
+//
+//    // if(RayMarch_Hiz_In_Texture_Space(start, rayDir, maxTraceDistance, position_1)){
+//    //   // vec2 hitScreenUV = GetScreenCoordinate(position_1);
+//
+//    //   // ssgi
+//    //   L_ind += EvalDiffuse(dir, wo, screenUV) / pdf * EvalDiffuse(wi, dir, position_1.xy) * EvalDirectionalLight(position_1.xy);
+//
+//    //   // ssr
+//    //   // L_ind += GetGBufferDiffuse(position_1.xy);
+//    // }
+//  }
+
+
+}
 
   L_ind /= float(SAMPLE_NUM);
 
