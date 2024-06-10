@@ -19,7 +19,7 @@ float L_dot_LT(mat3 PrecomputeL, mat3 PrecomputeLT) {
   vec3 LT_0 = PrecomputeLT[0];
   vec3 LT_1 = PrecomputeLT[1];
   vec3 LT_2 = PrecomputeLT[2];
-  return dot(L_0, LT_0) + dot(L_1, LT_1) + dot(L_2, LT_2);
+  return dot(L_0, LT_0) + dot(L_1, LT_1) + dot(L_2, LT_2); // mmc _0, _1, _2应该是前三阶sh的九个系数
 }
 
 void main(void) {

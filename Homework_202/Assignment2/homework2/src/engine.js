@@ -95,25 +95,37 @@ async function GAMES202Main() {
 			val = result;
 		});
 
-		let preArray = val.split(/[(\r\n)\r\n' ']+/);
+		let preArray = val.split(/[(\r\n)\r\n' ']+/); // mmc 按照空格把整个文件里的内容分割
 		let lineArray = [];
 		precomputeLT[i] = []
-		for (let j = 1; j <= Number(preArray.length) - 2; j++) {
+		for (let j = 1; j <= Number(preArray.length) - 2; j++) { // mmc 掐头去尾是因为第一个元素是顶点数量（fout << mesh->getVertexCount() << std::endl;），最后一个元素是空字符串
 			precomputeLT[i][j - 1] = Number(preArray[j])
 		}
+		/* mmc precomputeLT的数据格式
+		二维数组
+		第一维：4个cubemap
+		第二维：所有数据存成一个一维数组。数据每27个为一组，对应一个面，三个顶点各9个sh系数
+		 */
+		
 		await this.loadShaderFile(envmap[i] + "/light.txt").then(result => {
 			val = result;
 		});
 
 		precomputeL[i] = val.split(/[(\r\n)\r\n]+/);
-		precomputeL[i].pop();
-		for (let j = 0; j < 9; j++) {
-			lineArray = precomputeL[i][j].split(' ');
+		precomputeL[i].pop(); // mmc 删除最后一个空字符串
+		for (let j = 0; j < 9; j++) { // mmc 9个sh系数（每个系数三通道）
+			lineArray = precomputeL[i][j].split(' '); // mmc rgb三通道
 			for (let k = 0; k < 3; k++) {
-				lineArray[k] = Number(lineArray[k]);
+				lineArray[k] = Number(lineArray[k]); // mmc 字符串转数字
 			}
 			precomputeL[i][j] = lineArray;
 		}
+		/* mmc precomputeL的数据格式
+		三维数组
+		第一维：4个cubemap
+		第二维：9个sh系数，前三阶
+		第三维：3个通道，rgb
+		 */
 	}
 
 	// TODO: load model - Add your Material here
@@ -122,7 +134,7 @@ async function GAMES202Main() {
 
 	// Edit Start
 	let maryTransform = setTransform(0, -35, 0, 20, 20, 20);
-	loadOBJ(renderer, 'assets/mary/', 'mary', 'PRTMaterial', maryTransform);
+	loadOBJ(renderer, 'assets/mary/', 'mary', 'PRTMaterial', maryTransform); // mmc 设置使用PRTMaterial
 	// Edit End
 
 	function createGUI() {

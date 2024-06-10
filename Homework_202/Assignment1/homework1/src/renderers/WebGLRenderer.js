@@ -24,7 +24,7 @@ class WebGLRenderer {
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
         gl.clearDepth(1.0); // Clear everything
-        gl.enable(gl.DEPTH_TEST); // Enable depth testing
+        gl.enable(gl.DEPTH_TEST); // Enable depth testing // mmc webgl开启深度检测方法。shadow pass（渲染至shadow map）肯定也需要开启深度检测，于是寻找开启深度检测的位置，找到这里
         gl.depthFunc(gl.LEQUAL); // Near things obscure far things
 
         console.assert(this.lights.length != 0, "No light");

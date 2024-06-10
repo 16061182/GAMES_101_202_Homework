@@ -50,8 +50,8 @@ namespace ProjEnv
     }
 
     const Eigen::Vector3f cubemapFaceDirections[6][3] = { // mmc 6个平面的局部坐标系的、3个坐标轴方向
-        {{0, 0, 1}, {0, -1, 0}, {-1, 0, 0}},  // negx // mmc negx和posx的x、y轴同向，z轴反向，说明一个是左手系一个是右手系
-        {{0, 0, 1}, {0, -1, 0}, {1, 0, 0}},   // posx
+        {{0, 0, 1}, {0, -1, 0}, {-1, 0, 0}},  // negx
+        {{0, 0, -1}, {0, -1, 0}, {1, 0, 0}},   // posx // mmc 这里疑似写错，已改正，具体见notion笔记，有详细分析
         {{1, 0, 0}, {0, 0, -1}, {0, -1, 0}},  // negy
         {{1, 0, 0}, {0, 0, 1}, {0, 1, 0}},    // posy
         {{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}}, // negz
@@ -328,7 +328,7 @@ public:
         for (int f = 0; f < mesh->getTriangleCount(); f++)
         {
             const MatrixXu &F = mesh->getIndices();
-            uint32_t idx0 = F(0, f), idx1 = F(1, f), idx2 = F(2, f);
+            uint32_t idx0 = F(0, f), idx1 = F(1, f), idx2 = F(2, f); // mmc 面的三个顶点的idx
             for (int j = 0; j < SHCoeffLength; j++)
             {
                 fout << m_TransportSHCoeffs.col(idx0).coeff(j) << " "; // mmc 一个顶点的transfer sh系数占一行
